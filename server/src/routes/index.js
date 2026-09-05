@@ -7,6 +7,8 @@ const organizationRoutes = require('./organization.routes');
 const telemetryRoutes = require('./telemetry.routes');
 const anomalyRuleRoutes = require('./anomalyRule.routes');
 const anomalyRoutes = require('./anomaly.routes');
+const securityEventRoutes = require('./securityEvent.routes');
+const riskRoutes = require('./risk.routes');
 
 const router = express.Router();
 
@@ -19,5 +21,7 @@ router.use('/organizations', organizationRoutes);
 router.use('/telemetry', telemetryRoutes);
 router.use('/rules', anomalyRuleRoutes);
 router.use('/anomalies', anomalyRoutes);
+router.use('/security-events', securityEventRoutes);
+router.use('/risk', riskRoutes);
 
 module.exports = router;

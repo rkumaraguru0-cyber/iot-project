@@ -4,6 +4,7 @@ const { DEFAULT_SYSTEM_RULES } = require('./anomaly/defaultRules');
 const { evaluateRule } = require('./anomaly/ruleEvaluator');
 const telemetryBuffer = require('./anomaly/telemetryBuffer');
 const cooldownManager = require('./anomaly/cooldownManager');
+const securityEventService = require('./securityEvent.service');
 const logger = require('../utils/logger');
 
 class AnomalyService {
@@ -147,6 +148,17 @@ class AnomalyService {
             { _id: rule._id },
             { $set: { lastTriggeredAt: new Date() } }
           ).catch(() => {});
+
+          // Phase 8: Non-blocking Security Event processing & Risk Engine trigger
+          setImmediate(() => {
+            try {
+              securityEventService.processAnomaly(anomalyRecord).catch((err) => {
+                logger.error(`[Security Event Engine] Async anomaly processing failed: ${err.message}`);
+              });
+            } catch (err) {
+              logger.error(`[Security Event Engine] Failed to dispatch anomaly processing: ${err.message}`);
+            }
+          });
 
           logger.warn(`[Anomaly Engine] Anomaly detected on device '${deviceId}' [Rule: ${rule.ruleId}, Severity: ${rule.severity}] - ${evalResult.explanation}`);
         }

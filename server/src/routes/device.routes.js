@@ -1,6 +1,7 @@
 const express = require('express');
 const deviceController = require('../controllers/device.controller');
 const anomalyController = require('../controllers/anomaly.controller');
+const securityEventController = require('../controllers/securityEvent.controller');
 const authenticate = require('../middleware/auth');
 const orgScope = require('../middleware/orgScope');
 const { requireRole } = require('../middleware/rbac');
@@ -12,6 +13,7 @@ const {
 } = require('../validators/device.validator');
 const { getTelemetryQuerySchema } = require('../validators/telemetry.validator');
 const { listAnomaliesQuerySchema } = require('../validators/anomalyRule.validator');
+const { querySecurityEventsSchema } = require('../validators/securityEvent.validator');
 
 const router = express.Router();
 
@@ -120,6 +122,18 @@ router.get(
   requireRole('viewer'),
   validate(listAnomaliesQuerySchema, 'query'),
   anomalyController.getDeviceAnomalies
+);
+
+/**
+ * @route   GET /api/v1/devices/:id/security-events
+ * @desc    Get security events for a specific device
+ * @access  viewer+
+ */
+router.get(
+  '/:id/security-events',
+  requireRole('viewer'),
+  validate(querySecurityEventsSchema, 'query'),
+  securityEventController.getDeviceSecurityEvents
 );
 
 module.exports = router;

@@ -3,10 +3,13 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
 import { getDeviceById, regenerateDeviceApiKey, updateDevice } from '../api/devices';
+import { getDeviceSecurityEvents } from '../api/securityEvents';
 import { StatusBadge, HealthBadge, RiskBadge } from '../components/devices/DeviceStatusBadge';
 import { StateChangeModal } from '../components/devices/StateChangeModal';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { TelemetryCharts } from '../components/devices/TelemetryCharts';
+import { SecurityEventCard } from '../components/events/SecurityEventCard';
+import { SecurityEventDetailModal } from '../components/events/SecurityEventDetailModal';
 import {
   Cpu,
   ArrowLeft,
@@ -21,7 +24,8 @@ import {
   AlertOctagon,
   Copy,
   Check,
-  Edit2
+  Edit2,
+  ShieldAlert
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -35,6 +39,8 @@ export const DeviceDetailPage = () => {
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [newApiKey, setNewApiKey] = useState(null);
   const [copiedKey, setCopiedKey] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   const {
     data: device,
@@ -43,6 +49,15 @@ export const DeviceDetailPage = () => {
   } = useQuery({
     queryKey: ['device', id],
     queryFn: () => getDeviceById(id)
+  });
+
+  const {
+    data: deviceEventsData,
+    refetch: refetchEvents
+  } = useQuery({
+    queryKey: ['device-security-events', id],
+    queryFn: () => getDeviceSecurityEvents(id),
+    enabled: !!id
   });
 
   const handleRegenerateKey = async () => {
@@ -270,8 +285,8 @@ export const DeviceDetailPage = () => {
             </div>
 
             <p className="text-xs text-slate-400 leading-relaxed mb-4">
-              Risk score is calculated deterministically across 7 weighted security factors linking directly to
-              active security events, firmware vulnerability posture, and reporting anomalies.
+              Risk score is calculated deterministically across active security events, communication health state,
+              and telemetry traffic anomalies.
             </p>
 
             <div className="space-y-2">
@@ -301,13 +316,38 @@ export const DeviceDetailPage = () => {
           {/* Telemetry Metrics & Time-Series Charts (Phase 6) */}
           <TelemetryCharts deviceId={device._id || device.id} />
 
-          {/* Future Phase Placeholders (Explicitly Labelled per Contract) */}
-          <div className="p-5 bg-slate-900/40 border border-slate-800/60 border-dashed rounded-3xl text-center space-y-2">
-            <AlertOctagon className="w-6 h-6 text-slate-600 mx-auto" />
-            <div className="text-xs font-bold text-slate-300">Security Event Forensics</div>
-            <p className="text-[11px] text-slate-500">
-              Rule-triggered security detections will become available after Phase 8 (Detection & Security Events).
-            </p>
+          {/* Security Events for this Device (Phase 8) */}
+          <div className="bg-slate-900/70 border border-slate-800 rounded-3xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                <ShieldAlert className="w-4 h-4 text-indigo-400" />
+                Security Events & Anomaly Detections
+              </h2>
+              {deviceEventsData?.events?.length > 0 && (
+                <span className="text-[11px] font-mono font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded-lg">
+                  {deviceEventsData.events.length} Events
+                </span>
+              )}
+            </div>
+
+            {!deviceEventsData?.events || deviceEventsData.events.length === 0 ? (
+              <div className="p-5 bg-slate-950/40 rounded-xl border border-slate-800/60 text-xs text-slate-500 text-center">
+                No active or historical security events recorded for this device.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {deviceEventsData.events.map((evt) => (
+                  <SecurityEventCard
+                    key={evt._id}
+                    event={evt}
+                    onClick={(e) => {
+                      setSelectedEvent(e);
+                      setIsDetailModalOpen(true);
+                    }}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -359,6 +399,22 @@ export const DeviceDetailPage = () => {
         isLoading={isRegenerating}
         onConfirm={handleRegenerateKey}
         onCancel={() => setIsRegenConfirmOpen(false)}
+      />
+
+      {/* Security Event Detail & Triage Modal */}
+      <SecurityEventDetailModal
+        event={selectedEvent}
+        isOpen={isDetailModalOpen}
+        onClose={() => {
+          setIsDetailModalOpen(false);
+          setSelectedEvent(null);
+        }}
+        onStatusUpdated={() => {
+          refetch();
+          refetchEvents();
+          setIsDetailModalOpen(false);
+          setSelectedEvent(null);
+        }}
       />
     </div>
   );

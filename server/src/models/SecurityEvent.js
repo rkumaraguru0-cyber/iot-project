@@ -24,10 +24,34 @@ const securityEventSchema = new mongoose.Schema(
       required: [true, 'Rule ID reference is required'],
       trim: true
     },
+    ruleName: {
+      type: String,
+      default: 'Security Rule Breach',
+      trim: true
+    },
+    anomalyId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Anomaly',
+      default: null,
+      index: true
+    },
     rawTelemetryId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Telemetry',
       required: [true, 'Raw telemetry reference is required for forensic traceability']
+    },
+    metric: {
+      type: String,
+      default: null,
+      trim: true
+    },
+    observedValue: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null
+    },
+    thresholdValue: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null
     },
     category: {
       type: String,
@@ -86,6 +110,11 @@ const securityEventSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       default: null
+    },
+    resolutionNote: {
+      type: String,
+      default: null,
+      trim: true
     },
     incidentId: {
       type: String,
