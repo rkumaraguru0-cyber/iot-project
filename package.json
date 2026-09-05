@@ -1,0 +1,29 @@
+{
+  "name": "securewatch-iot",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SecureWatch IoT — Deterministic Security Intelligence for IoT Device Fleets",
+  "workspaces": [
+    "server",
+    "client",
+    "simulator"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=server",
+    "dev:server": "npm run dev --workspace=server",
+    "dev:client": "npm run dev --workspace=client",
+    "dev:simulator": "npm run dev --workspace=simulator",
+    "build:client": "npm run build --workspace=client",
+    "test:server": "npm test --workspace=server",
+    "test": "npm run test:server"
+  },
+  "keywords": [
+    "iot",
+    "security",
+    "soc",
+    "mern",
+    "monitoring"
+  ],
+  "author": "SecureWatch Team",
+  "license": "ISC"
+}

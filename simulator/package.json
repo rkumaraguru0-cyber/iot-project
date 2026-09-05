@@ -1,0 +1,20 @@
+{
+  "name": "securewatch-simulator",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SecureWatch IoT — Device Fleet & Cyber Attack Simulator",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
