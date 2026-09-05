@@ -6,6 +6,7 @@ const {
   Device,
   Telemetry,
   AnomalyRule,
+  Anomaly,
   SecurityEvent,
   Incident,
   FirmwareVersion,
@@ -183,6 +184,30 @@ describe('Database Foundation & Schema Validation (Phase 2)', () => {
       expect(err).toBeUndefined();
       expect(rule.enabled).toBe(true);
       expect(rule.deviceTypes).toEqual(['*']);
+    });
+  });
+
+  describe('6.1 Anomaly Model (Phase 7)', () => {
+    it('should validate an immutable anomaly detection record', () => {
+      const anomaly = new Anomaly({
+        organizationId: dummyOrgId,
+        deviceId: dummyDeviceId,
+        rawTelemetryId: dummyTelemetryId,
+        ruleId: 'RULE-CPU-HIGH',
+        ruleName: 'High CPU Sustained',
+        category: 'threshold',
+        metric: 'cpu_usage',
+        observedValue: 94.5,
+        thresholdValue: 85,
+        severity: 'high',
+        confidence: 'high',
+        explanation: 'Observed value 94.5 exceeded threshold 85',
+        timestamp: new Date()
+      });
+      const err = anomaly.validateSync();
+      expect(err).toBeUndefined();
+      expect(Anomaly.schema.options.timestamps.createdAt).toBe(true);
+      expect(Anomaly.schema.options.timestamps.updatedAt).toBe(false);
     });
   });
 

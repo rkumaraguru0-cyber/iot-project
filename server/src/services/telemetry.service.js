@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const mongoose = require('mongoose');
 const { Telemetry, Device } = require('../models');
 const { validateTelemetryPayload } = require('../validators/telemetry.validator');
+const anomalyService = require('./anomaly.service');
 const logger = require('../utils/logger');
 
 const DEDUP_CACHE_LIMIT = 10000;
@@ -227,6 +228,17 @@ class TelemetryService {
     }
 
     const docObj = telemetryDoc && typeof telemetryDoc.toObject === 'function' ? telemetryDoc.toObject() : telemetryDoc;
+
+    // 5. Non-blocking Phase 7 Anomaly Processing
+    setImmediate(() => {
+      try {
+        anomalyService.processTelemetry(deviceContext, docObj || telemetryDoc).catch((err) => {
+          logger.error(`[Anomaly Engine] Non-blocking anomaly evaluation failed: ${err.message}`);
+        });
+      } catch (err) {
+        logger.error(`[Anomaly Engine] Non-blocking dispatch failed: ${err.message}`);
+      }
+    });
 
     return {
       status: 'stored',

@@ -3,6 +3,7 @@ const User = require('./User');
 const RefreshToken = require('./RefreshToken');
 const Device = require('./Device');
 const Telemetry = require('./Telemetry');
+const Anomaly = require('./Anomaly');
 const AnomalyRule = require('./AnomalyRule');
 const SecurityEvent = require('./SecurityEvent');
 const Incident = require('./Incident');
@@ -17,6 +18,7 @@ module.exports = {
   RefreshToken,
   Device,
   Telemetry,
+  Anomaly,
   AnomalyRule,
   SecurityEvent,
   Incident,

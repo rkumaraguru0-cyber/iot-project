@@ -7,6 +7,7 @@ import { DeviceInventoryPage } from './pages/DeviceInventoryPage';
 import { DeviceDetailPage } from './pages/DeviceDetailPage';
 import { UserManagementPage } from './pages/UserManagementPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { RulesPage } from './pages/RulesPage';
 
 export const App = () => {
   return (
@@ -26,6 +27,7 @@ export const App = () => {
         <Route index element={<Navigate to="/devices" replace />} />
         <Route path="devices" element={<DeviceInventoryPage />} />
         <Route path="devices/:id" element={<DeviceDetailPage />} />
+        <Route path="rules" element={<RulesPage />} />
         <Route path="users" element={<UserManagementPage />} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>

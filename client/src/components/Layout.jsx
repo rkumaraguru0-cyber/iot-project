@@ -32,6 +32,7 @@ export const Layout = () => {
 
   const navItems = [
     { to: '/devices', label: 'Device Inventory', icon: Cpu, active: true },
+    { to: '/rules', label: 'Detection Rules', icon: FileCode, active: true },
     { to: '/users', label: 'Team & Access', icon: Users, active: true },
     { to: '/settings', label: 'Org Settings & Profile', icon: Settings, active: true }
   ];
@@ -40,7 +41,6 @@ export const Layout = () => {
     { label: 'Security Events', icon: Activity, phase: 'Ph 8' },
     { label: 'Incidents & SLA', icon: AlertOctagon, phase: 'Ph 9' },
     { label: 'Firmware & CVEs', icon: HardDrive, phase: 'Ph 10' },
-    { label: 'Detection Rules', icon: FileCode, phase: 'Ph 7' },
     { label: 'Forensic Audit Log', icon: FileText, phase: 'Ph 11' }
   ];
 

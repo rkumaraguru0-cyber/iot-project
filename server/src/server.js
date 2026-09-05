@@ -3,6 +3,7 @@ const config = require('./config');
 const logger = require('./utils/logger');
 const { connectDatabase, disconnectDatabase } = require('./config/database');
 const { startMqttBroker } = require('./mqtt/aedesBroker');
+const anomalyService = require('./services/anomaly.service');
 
 const startServer = async () => {
   try {
@@ -10,6 +11,7 @@ const startServer = async () => {
     if (config.env !== 'test') {
       try {
         await connectDatabase();
+        await anomalyService.seedDefaultRules();
       } catch (dbErr) {
         logger.warn(`Database connection initial attempt failed: ${dbErr.message}. Server starting in degraded/standalone mode.`);
       }
