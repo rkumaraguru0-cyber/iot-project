@@ -15,7 +15,8 @@
     "dev:simulator": "npm run dev --workspace=simulator",
     "build:client": "npm run build --workspace=client",
     "test:server": "npm test --workspace=server",
-    "test": "npm run test:server"
+    "test:simulator": "npm test --workspace=simulator",
+    "test": "npm run test:server && npm run test:simulator"
   },
   "keywords": [
     "iot",
