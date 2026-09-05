@@ -33,13 +33,13 @@ export const Layout = () => {
   const navItems = [
     { to: '/devices', label: 'Device Inventory', icon: Cpu, active: true },
     { to: '/security-events', label: 'Security Events', icon: Activity, active: true },
+    { to: '/incidents', label: 'Incidents & SLA', icon: AlertOctagon, active: true },
     { to: '/rules', label: 'Detection Rules', icon: FileCode, active: true },
     { to: '/users', label: 'Team & Access', icon: Users, active: true },
     { to: '/settings', label: 'Org Settings & Profile', icon: Settings, active: true }
   ];
 
   const queuedNavItems = [
-    { label: 'Incidents & SLA', icon: AlertOctagon, phase: 'Ph 9' },
     { label: 'Firmware & CVEs', icon: HardDrive, phase: 'Ph 10' },
     { label: 'Forensic Audit Log', icon: FileText, phase: 'Ph 11' }
   ];

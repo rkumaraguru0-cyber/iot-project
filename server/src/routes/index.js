@@ -9,6 +9,7 @@ const anomalyRuleRoutes = require('./anomalyRule.routes');
 const anomalyRoutes = require('./anomaly.routes');
 const securityEventRoutes = require('./securityEvent.routes');
 const riskRoutes = require('./risk.routes');
+const incidentRoutes = require('./incident.routes');
 
 const router = express.Router();
 
@@ -23,5 +24,6 @@ router.use('/rules', anomalyRuleRoutes);
 router.use('/anomalies', anomalyRoutes);
 router.use('/security-events', securityEventRoutes);
 router.use('/risk', riskRoutes);
+router.use('/incidents', incidentRoutes);
 
 module.exports = router;

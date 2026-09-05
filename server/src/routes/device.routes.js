@@ -15,6 +15,8 @@ const { getTelemetryQuerySchema } = require('../validators/telemetry.validator')
 const { listAnomaliesQuerySchema } = require('../validators/anomalyRule.validator');
 const { querySecurityEventsSchema } = require('../validators/securityEvent.validator');
 
+const incidentController = require('../controllers/incident.controller');
+
 const router = express.Router();
 
 // Enforce authentication and tenant scoping on all device routes
@@ -134,6 +136,17 @@ router.get(
   requireRole('viewer'),
   validate(querySecurityEventsSchema, 'query'),
   securityEventController.getDeviceSecurityEvents
+);
+
+/**
+ * @route   GET /api/v1/devices/:id/incidents
+ * @desc    Get incidents for a specific device
+ * @access  viewer+
+ */
+router.get(
+  '/:id/incidents',
+  requireRole('viewer'),
+  incidentController.getDeviceIncidents
 );
 
 module.exports = router;

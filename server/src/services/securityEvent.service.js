@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const mongoose = require('mongoose');
 const { SecurityEvent, Device } = require('../models');
 const riskService = require('./risk.service');
+const correlationService = require('./correlation.service');
 const logger = require('../utils/logger');
 const { ROLE_HIERARCHY } = require('../middleware/rbac');
 
@@ -90,7 +91,7 @@ class SecurityEventService {
         logger.debug(`[Security Event Engine] Aggregated anomaly into active SecurityEvent ${resultingEvent.eventId} (count: ${resultingEvent.occurrenceCount})`);
       }
 
-      // 3. Asynchronously trigger Risk Engine recalculation
+      // 3. Asynchronously trigger Risk Engine recalculation & Phase 9 Event Correlation
       setImmediate(() => {
         try {
           riskService.recalculateDeviceRisk(devId, orgId).catch((err) => {
@@ -98,6 +99,14 @@ class SecurityEventService {
           });
         } catch (err) {
           logger.error(`[Risk Engine] Failed to dispatch risk calculation: ${err.message}`);
+        }
+
+        try {
+          correlationService.processSecurityEvent(resultingEvent).catch((err) => {
+            logger.error(`[Correlation Engine] Async event correlation failed: ${err.message}`);
+          });
+        } catch (err) {
+          logger.error(`[Correlation Engine] Failed to dispatch event correlation: ${err.message}`);
         }
       });
 
