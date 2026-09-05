@@ -9,6 +9,7 @@ const {
   updateDeviceSchema,
   listDevicesQuerySchema
 } = require('../validators/device.validator');
+const { getTelemetryQuerySchema } = require('../validators/telemetry.validator');
 
 const router = express.Router();
 
@@ -93,6 +94,18 @@ router.get(
   '/:id/risk',
   requireRole('viewer'),
   deviceController.getDeviceRisk
+);
+
+/**
+ * @route   GET /api/v1/devices/:id/telemetry
+ * @desc    Get recent telemetry time-series for a device
+ * @access  viewer+
+ */
+router.get(
+  '/:id/telemetry',
+  requireRole('viewer'),
+  validate(getTelemetryQuerySchema, 'query'),
+  deviceController.getDeviceTelemetry
 );
 
 module.exports = router;

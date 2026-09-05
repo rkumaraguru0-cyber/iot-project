@@ -6,6 +6,7 @@ import { getDeviceById, regenerateDeviceApiKey, updateDevice } from '../api/devi
 import { StatusBadge, HealthBadge, RiskBadge } from '../components/devices/DeviceStatusBadge';
 import { StateChangeModal } from '../components/devices/StateChangeModal';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
+import { TelemetryCharts } from '../components/devices/TelemetryCharts';
 import {
   Cpu,
   ArrowLeft,
@@ -297,23 +298,16 @@ export const DeviceDetailPage = () => {
             </div>
           </div>
 
-          {/* Future Phase Placeholders (Explicitly Labelled per Contract) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="p-5 bg-slate-900/40 border border-slate-800/60 border-dashed rounded-3xl text-center space-y-2">
-              <Activity className="w-6 h-6 text-slate-600 mx-auto" />
-              <div className="text-xs font-bold text-slate-300">Telemetry Ingestion & Charts</div>
-              <p className="text-[11px] text-slate-500">
-                Live metrics & time-series streaming will become available after Phase 6 (MQTT + Telemetry Ingestion).
-              </p>
-            </div>
+          {/* Telemetry Metrics & Time-Series Charts (Phase 6) */}
+          <TelemetryCharts deviceId={device._id || device.id} />
 
-            <div className="p-5 bg-slate-900/40 border border-slate-800/60 border-dashed rounded-3xl text-center space-y-2">
-              <AlertOctagon className="w-6 h-6 text-slate-600 mx-auto" />
-              <div className="text-xs font-bold text-slate-300">Security Event Forensics</div>
-              <p className="text-[11px] text-slate-500">
-                Rule-triggered security detections will become available after Phase 8 (Detection & Security Events).
-              </p>
-            </div>
+          {/* Future Phase Placeholders (Explicitly Labelled per Contract) */}
+          <div className="p-5 bg-slate-900/40 border border-slate-800/60 border-dashed rounded-3xl text-center space-y-2">
+            <AlertOctagon className="w-6 h-6 text-slate-600 mx-auto" />
+            <div className="text-xs font-bold text-slate-300">Security Event Forensics</div>
+            <p className="text-[11px] text-slate-500">
+              Rule-triggered security detections will become available after Phase 8 (Detection & Security Events).
+            </p>
           </div>
         </div>
 

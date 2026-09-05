@@ -10,7 +10,8 @@
     "test": "jest --detectOpenHandles"
   },
   "dependencies": {
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.5",
+    "mqtt": "^5.15.2"
   },
   "devDependencies": {
     "jest": "^29.7.0",

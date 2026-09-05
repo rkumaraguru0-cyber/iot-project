@@ -34,3 +34,8 @@ export const getDeviceRisk = async (id) => {
   const { data } = await apiClient.get(`/devices/${id}/risk`);
   return data;
 };
+
+export const getDeviceTelemetry = async (id, params = {}) => {
+  const { data } = await apiClient.get(`/devices/${id}/telemetry`, { params });
+  return data;
+};

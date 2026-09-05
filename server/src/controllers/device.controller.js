@@ -100,6 +100,23 @@ const getDeviceRisk = async (req, res, next) => {
   }
 };
 
+/**
+ * Get recent telemetry time-series for a device
+ */
+const getDeviceTelemetry = async (req, res, next) => {
+  try {
+    const telemetryService = require('../services/telemetry.service');
+    const result = await telemetryService.getDeviceTelemetry(
+      req.params.id,
+      req.organizationId,
+      req.query
+    );
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   registerDevice,
   listDevices,
@@ -107,5 +124,6 @@ module.exports = {
   getDeviceById,
   updateDevice,
   regenerateApiKey,
-  getDeviceRisk
+  getDeviceRisk,
+  getDeviceTelemetry
 };

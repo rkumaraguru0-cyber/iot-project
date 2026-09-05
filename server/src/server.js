@@ -2,6 +2,7 @@ const app = require('./app');
 const config = require('./config');
 const logger = require('./utils/logger');
 const { connectDatabase, disconnectDatabase } = require('./config/database');
+const { startMqttBroker } = require('./mqtt/aedesBroker');
 
 const startServer = async () => {
   try {
@@ -14,16 +15,40 @@ const startServer = async () => {
       }
     }
 
+    // Start Express HTTP Server
     const server = app.listen(config.port, config.host, () => {
       logger.info(`SecureWatch IoT Server running in ${config.env} mode on http://${config.host}:${config.port}`);
       logger.info(`Health check available at http://${config.host}:${config.port}/api/v1/health`);
     });
 
+    // Start Embedded Aedes MQTT Broker in non-test mode
+    let mqttBrokerInstance = null;
+    if (config.env !== 'test') {
+      try {
+        mqttBrokerInstance = await startMqttBroker(config.mqtt.port, config.mqtt.host);
+      } catch (mqttErr) {
+        logger.error(`Failed to initialize embedded MQTT broker: ${mqttErr.message}`);
+      }
+    }
+
     // Graceful shutdown handlers
     const handleShutdown = async (signal) => {
       logger.info(`Received ${signal}. Shutting down gracefully...`);
+
+      // 1. Close MQTT broker
+      if (mqttBrokerInstance && typeof mqttBrokerInstance.close === 'function') {
+        try {
+          await mqttBrokerInstance.close();
+        } catch (mErr) {
+          logger.error('Error closing MQTT broker: %s', mErr.message);
+        }
+      }
+
+      // 2. Close HTTP Server
       server.close(async () => {
         logger.info('HTTP server closed.');
+
+        // 3. Disconnect Database
         try {
           await disconnectDatabase();
         } catch (err) {
@@ -42,7 +67,7 @@ const startServer = async () => {
     process.on('SIGTERM', () => handleShutdown('SIGTERM'));
     process.on('SIGINT', () => handleShutdown('SIGINT'));
 
-    return server;
+    return { server, mqttBroker: mqttBrokerInstance };
   } catch (error) {
     logger.error('Failed to start server: %s', error.message);
     process.exit(1);
