@@ -358,4 +358,81 @@ describe('Socket.IO Real-Time Engine & Domain Events (Phase 11)', () => {
       emitter.emitNotificationNew(userOrg1._id.toString(), notifData);
     });
   });
+
+  describe('Socket Lifecycle, Leave Handlers & Handshake Fallbacks', () => {
+    it('authenticates via authorization header fallback in handshake', (done) => {
+      const client = ioClient(serverUrl, {
+        extraHeaders: {
+          authorization: `Bearer ${tokenOrg1}`
+        },
+        transports: ['websocket'],
+        forceNew: true,
+        reconnection: false
+      });
+
+      client.on('connect', () => {
+        client.disconnect();
+        done();
+      });
+    });
+
+    it('rejects handshake when token is expired with TOKEN_EXPIRED code', (done) => {
+      const expiredToken = jwt.sign(
+        { userId: userOrg1._id.toString(), organizationId: org1Id.toString(), role: userOrg1.role },
+        config.jwt.secret,
+        { expiresIn: '-5s' }
+      );
+
+      const client = ioClient(serverUrl, {
+        auth: { token: expiredToken },
+        transports: ['websocket'],
+        forceNew: true,
+        reconnection: false
+      });
+
+      client.on('connect_error', (err) => {
+        expect(err.message).toMatch(/Token expired/i);
+        expect(err.data?.code).toBe('TOKEN_EXPIRED');
+        done();
+      });
+    });
+
+    it('handles leave:device and leave:incident cleanly with callbacks', (done) => {
+      const client = createClientSocket(tokenOrg1);
+      client.on('connect', () => {
+        client.emit('leave:device', { deviceId: 'DEV-001' }, (res1) => {
+          expect(res1.success).toBe(true);
+          client.emit('leave:incident', { incidentId: 'INC-001' }, (res2) => {
+            expect(res2.success).toBe(true);
+            client.disconnect();
+            done();
+          });
+        });
+      });
+    });
+
+    it('returns error in join:device and join:incident when ID is missing', (done) => {
+      const client = createClientSocket(tokenOrg1);
+      client.on('connect', () => {
+        client.emit('join:device', {}, (res1) => {
+          expect(res1.success).toBe(false);
+          expect(res1.error).toMatch(/Device ID required/i);
+          client.emit('join:incident', {}, (res2) => {
+            expect(res2.success).toBe(false);
+            expect(res2.error).toMatch(/Incident ID required/i);
+            client.disconnect();
+            done();
+          });
+        });
+      });
+    });
+
+    it('manages socket server instance via getSocketServer and setSocketServer', () => {
+      const { getSocketServer, setSocketServer } = require('../src/socket');
+      const current = getSocketServer();
+      expect(current).toBeDefined();
+      setSocketServer(current);
+      expect(getSocketServer()).toBe(current);
+    });
+  });
 });

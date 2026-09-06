@@ -15,7 +15,12 @@ const dashboardRoutes = require('./dashboard.routes');
 const auditLogRoutes = require('./auditLog.routes');
 const notificationRoutes = require('./notification.routes');
 
+const { apiLimiter } = require('../middleware/rateLimiter');
+
 const router = express.Router();
+
+// Mount global API rate limiter on all /api/v1 routes
+router.use(apiLimiter);
 
 // Mount foundational routes
 router.use('/health', healthRoutes);
