@@ -1,10 +1,10 @@
-# Development Setup Guide
+# Development & Operations Setup Guide
 
 ## System Requirements
 
 - **Node.js**: `v20.x LTS` or higher
 - **npm**: `v10.x` or higher
-- **MongoDB**: `v7.x` or higher
+- **MongoDB**: `v6.0` or higher (running locally on port 27017 or remote replica set)
 
 ## Initial Workspace Setup
 
@@ -25,14 +25,15 @@
 
 ## Running the Development Services
 
-### Run Server (Backend REST API)
+### Run Server (Backend REST API + Embedded MQTT Broker)
 ```bash
 npm run dev:server
 ```
 - Server URL: `http://localhost:5000`
 - Health check: `http://localhost:5000/api/v1/health`
+- Embedded MQTT Broker: `mqtt://localhost:1883`
 
-### Run Client (React Frontend)
+### Run Client (React SOC Frontend)
 ```bash
 npm run dev:client
 ```
@@ -40,10 +41,18 @@ npm run dev:client
 
 ### Run Simulator (IoT Fleet Simulator)
 ```bash
+# Standard Console Simulator
 npm run dev:simulator
+
+# Run Scenario 2 with Time Acceleration
+node simulator/src/index.js --scenario 2 --time-scale 10 --mode console
 ```
 
-## Running Verification & Tests
+## Running Automated Verification & Tests
 ```bash
+# Run all workspace test suites (Server 37 suites + Simulator 7 suites)
 npm test
+
+# Build client production bundle
+npm run build:client
 ```
