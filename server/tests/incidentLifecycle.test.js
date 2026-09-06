@@ -400,7 +400,7 @@ describe('Incident Lifecycle & State Machine (Phase 9)', () => {
       expect(mockIncident.save).toHaveBeenCalled();
     });
 
-    it('should record rollback_firmware intent without executing premature deployment', async () => {
+    it('should execute rollback_firmware via Phase 10 firmwareService bridge', async () => {
       const mockIncident = {
         _id: new mongoose.Types.ObjectId(),
         incidentId: 'INC-ROLLBACK-01',
@@ -413,6 +413,10 @@ describe('Incident Lifecycle & State Machine (Phase 9)', () => {
       };
 
       jest.spyOn(Incident, 'findOne').mockResolvedValue(mockIncident);
+      const firmwareService = require('../src/services/firmware.service');
+      jest.spyOn(firmwareService, 'rollbackFailedDeploymentForDevice').mockResolvedValue(
+        'Firmware rollback skipped: no eligible failed deployment with previous version found'
+      );
 
       const result = await incidentService.recordResponseAction(
         mockIncident.incidentId,
@@ -423,7 +427,12 @@ describe('Incident Lifecycle & State Machine (Phase 9)', () => {
       );
 
       expect(result.responseActions[0].action).toBe('rollback_firmware');
-      expect(result.responseActions[0].details).toContain('pending Phase 10');
+      expect(result.responseActions[0].details).toContain('Firmware rollback skipped');
+      expect(firmwareService.rollbackFailedDeploymentForDevice).toHaveBeenCalledWith(
+        devId,
+        expect.any(mongoose.Types.ObjectId),
+        analystUser
+      );
       expect(mockIncident.save).toHaveBeenCalled();
     });
   });

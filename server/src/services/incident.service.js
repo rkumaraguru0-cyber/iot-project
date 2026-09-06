@@ -606,8 +606,20 @@ class IncidentService {
         throw err;
       }
     } else if (action === 'rollback_firmware') {
-      // Phase 9 records intent only; deployment is deferred to Phase 10
-      executionResultNote = ' [Firmware rollback recorded; deployment pending Phase 10 execution]';
+      if (actorLevel >= ROLE_HIERARCHY.security_analyst) {
+        const firmwareService = require('./firmware.service');
+        const rollbackOutcome = await firmwareService.rollbackFailedDeploymentForDevice(
+          incident.deviceId,
+          orgObjectId,
+          actorUser
+        );
+        executionResultNote = ` [${rollbackOutcome}]`;
+      } else {
+        const err = new Error('Rolling back firmware requires security_analyst privileges');
+        err.code = 'FORBIDDEN';
+        err.statusCode = 403;
+        throw err;
+      }
     } else if (action === 'escalate') {
       if (incident.severity === 'low') incident.severity = 'medium';
       else if (incident.severity === 'medium') incident.severity = 'high';
