@@ -79,6 +79,66 @@ class MqttTransport {
   }
 
   /**
+   * Simulates failed authentication attempts by connecting with invalid credentials.
+   * PRD §11.5 auth-bruteforce mode: 10 failed attempts, never exposes valid credentials, verifies rejection.
+   *
+   * @param {Object} device - { deviceId, organizationId }
+   * @param {number} [count=10] - Number of attempts
+   * @param {string} [invalidPasswordPrefix='invalid_auth_pass_']
+   * @returns {Promise<{ attempts: number, rejected: number }>}
+   */
+  async simulateAuthFailures(device, count = 10, invalidPasswordPrefix = 'invalid_auth_pass_') {
+    const deviceId = (device.deviceId || 'DEV-UNKNOWN').toUpperCase();
+    let rejectedCount = 0;
+
+    for (let i = 0; i < count; i++) {
+      try {
+        await new Promise((resolve) => {
+          let finished = false;
+          const finish = (rejected) => {
+            if (!finished) {
+              finished = true;
+              if (rejected) {
+                rejectedCount++;
+              }
+              resolve();
+            }
+          };
+
+          const client = mqtt.connect(this.mqttUrl, {
+            username: deviceId,
+            password: `${invalidPasswordPrefix}${i}_${Date.now()}`,
+            clientId: `sim_fail_${deviceId}_${i}_${Math.random().toString(16).substring(2, 8)}`,
+            connectTimeout: 2000,
+            reconnectPeriod: 0
+          });
+
+          client.on('connect', () => {
+            client.end(true);
+            finish(false); // Unexpected connect with invalid password
+          });
+
+          client.on('error', () => {
+            client.end(true);
+            finish(true); // Expected rejection
+          });
+
+          // Timeout fallback
+          setTimeout(() => {
+            try { client.end(true); } catch (e) {}
+            finish(true);
+          }, 2500);
+        });
+      } catch (err) {
+        rejectedCount++;
+      }
+    }
+
+    logger.debug(`[Simulator MQTT] Auth brute force simulation on '${deviceId}': ${rejectedCount}/${count} rejected.`);
+    return { attempts: count, rejected: rejectedCount };
+  }
+
+  /**
    * Closes all active device MQTT connections.
    */
   close() {

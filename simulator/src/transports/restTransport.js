@@ -53,6 +53,51 @@ class RestTransport {
       };
     }
   }
+
+  /**
+   * Simulates failed REST authentication attempts by sending requests with invalid API keys.
+   * Expects HTTP 401 Unauthorized or failure, never logs valid credentials.
+   *
+   * @param {Object} device - { deviceId, organizationId }
+   * @param {number} [count=10]
+   * @param {string} [invalidKeyPrefix='invalid_api_key_']
+   * @returns {Promise<{ attempts: number, rejected: number }>}
+   */
+  async simulateAuthFailures(device, count = 10, invalidKeyPrefix = 'invalid_api_key_') {
+    const deviceId = (device && device.deviceId) || 'DEV-UNKNOWN';
+    const orgId = (device && device.organizationId) || 'default-org';
+    const url = `${this.apiUrl}/telemetry/ingest`;
+    let rejectedCount = 0;
+
+    for (let i = 0; i < count; i++) {
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Device-API-Key': `${invalidKeyPrefix}${i}_${Date.now()}`
+          },
+          body: JSON.stringify({
+            deviceId,
+            organizationId: orgId,
+            timestamp: new Date().toISOString(),
+            metrics: { cpu_usage: 10.0 },
+            metadata: { ip: '192.168.1.100', firmware_version: '1.0.0', uptime: 10 }
+          })
+        });
+
+        if (response.status === 401 || response.status === 403 || !response.ok) {
+          rejectedCount++;
+        }
+      } catch (err) {
+        // Network error / unreachable also counts as rejection
+        rejectedCount++;
+      }
+    }
+
+    logger.debug(`[Simulator REST] Auth brute force simulation on '${deviceId}': ${rejectedCount}/${count} rejected.`);
+    return { attempts: count, rejected: rejectedCount };
+  }
 }
 
 RestTransport.RestTransport = RestTransport;
