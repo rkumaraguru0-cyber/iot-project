@@ -11,6 +11,9 @@ const securityEventRoutes = require('./securityEvent.routes');
 const riskRoutes = require('./risk.routes');
 const incidentRoutes = require('./incident.routes');
 const firmwareRoutes = require('./firmware.routes');
+const dashboardRoutes = require('./dashboard.routes');
+const auditLogRoutes = require('./auditLog.routes');
+const notificationRoutes = require('./notification.routes');
 
 const router = express.Router();
 
@@ -27,5 +30,8 @@ router.use('/security-events', securityEventRoutes);
 router.use('/risk', riskRoutes);
 router.use('/incidents', incidentRoutes);
 router.use('/firmware', firmwareRoutes);
+router.use('/dashboard', dashboardRoutes);
+router.use('/audit-logs', auditLogRoutes);
+router.use('/notifications', notificationRoutes);
 
 module.exports = router;

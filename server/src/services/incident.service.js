@@ -3,6 +3,8 @@ const mongoose = require('mongoose');
 const { Incident, Device, User, SecurityEvent, Organization } = require('../models');
 const { logAuditEvent } = require('./audit.service');
 const { ROLE_HIERARCHY } = require('../middleware/rbac');
+const emitter = require('../socket/emitter');
+const notificationService = require('./notification.service');
 const logger = require('../utils/logger');
 
 const DEFAULT_SLA_THRESHOLDS = {
@@ -151,6 +153,18 @@ class IncidentService {
         strategy: correlationDetails?.strategyId || 'STANDALONE',
         eventCount: relatedEventIds.length
       }
+    });
+
+    // Real-time integration (Phase 11): Emit new incident event & dispatch notifications
+    emitter.emitIncidentNew(orgObjectId.toString(), {
+      incidentId: incident.incidentId,
+      title: incident.title,
+      severity: incident.severity,
+      deviceId: devObjectId
+    });
+
+    notificationService.notifyIncidentCreated(orgObjectId.toString(), incident).catch((err) => {
+      logger.error(`[Notification Service] Async incident creation notification failed: ${err.message}`);
     });
 
     logger.info(`[Incident Engine] Created new Incident ${incident.incidentId} [Severity: ${incident.severity}] for device ${deviceId}`);
@@ -401,6 +415,18 @@ class IncidentService {
       }
     });
 
+    // Real-time integration (Phase 11): Emit updated incident event & dispatch notifications on actual status change
+    if (currentStatus !== newStatus) {
+      emitter.emitIncidentUpdated(incident.organizationId.toString(), incident.incidentId, {
+        status: incident.status,
+        severity: incident.severity
+      });
+
+      notificationService.notifyIncidentUpdated(incident.organizationId.toString(), incident).catch((err) => {
+        logger.error(`[Notification Service] Async incident status update notification failed: ${err.message}`);
+      });
+    }
+
     logger.info(`[Incident Lifecycle] Incident ${incident.incidentId} transitioned from '${currentStatus}' to '${newStatus}' by ${actorName}`);
     return incident.toObject();
   }
@@ -581,6 +607,7 @@ class IncidentService {
     const actorRole = actorUser?.role || 'viewer';
     const actorLevel = ROLE_HIERARCHY[actorRole] || 0;
 
+    const prevSeverity = incident.severity;
     let executionResultNote = '';
 
     // Execute Phase 4 capabilities when explicitly chosen
@@ -591,6 +618,18 @@ class IncidentService {
           { $set: { status: 'quarantined' } }
         );
         executionResultNote = ' [Device status transitioned to quarantined]';
+
+        emitter.emitDeviceStatusChanged(orgObjectId.toString(), {
+          deviceId: incident.deviceId,
+          status: 'quarantined',
+          previousStatus: 'active'
+        });
+        notificationService.notifyDeviceQuarantined(orgObjectId.toString(), {
+          _id: incident.deviceId,
+          deviceId: incident.deviceId
+        }).catch((err) => {
+          logger.error(`[Notification Service] Async device quarantined notification failed: ${err.message}`);
+        });
       }
     } else if (action === 'revoke_key') {
       if (actorLevel >= ROLE_HIERARCHY.security_analyst) {
@@ -644,6 +683,18 @@ class IncidentService {
     });
 
     await incident.save();
+
+    // Real-time integration (Phase 11): Emit updated incident event & notify on severity escalation
+    if (action === 'escalate' && prevSeverity !== incident.severity) {
+      emitter.emitIncidentUpdated(incident.organizationId.toString(), incident.incidentId, {
+        status: incident.status,
+        severity: incident.severity
+      });
+
+      notificationService.notifyIncidentUpdated(incident.organizationId.toString(), incident).catch((err) => {
+        logger.error(`[Notification Service] Async incident severity escalation notification failed: ${err.message}`);
+      });
+    }
 
     await logAuditEvent({
       action: 'incident.action_recorded',
@@ -754,6 +805,7 @@ class IncidentService {
       throw err;
     }
 
+    const currentStatus = incident.status;
     const now = new Date();
     incident.status = 'resolved';
     incident.resolvedAt = now;
@@ -781,6 +833,18 @@ class IncidentService {
     });
 
     await incident.save();
+
+    // Real-time integration (Phase 11): Emit updated incident event & dispatch notifications on resolution
+    if (currentStatus !== 'resolved') {
+      emitter.emitIncidentUpdated(incident.organizationId.toString(), incident.incidentId, {
+        status: incident.status,
+        severity: incident.severity
+      });
+
+      notificationService.notifyIncidentUpdated(incident.organizationId.toString(), incident).catch((err) => {
+        logger.error(`[Notification Service] Async incident resolved notification failed: ${err.message}`);
+      });
+    }
 
     await logAuditEvent({
       action: 'incident.resolved',

@@ -3,6 +3,8 @@ const mongoose = require('mongoose');
 const { SecurityEvent, Device } = require('../models');
 const riskService = require('./risk.service');
 const correlationService = require('./correlation.service');
+const notificationService = require('./notification.service');
+const emitter = require('../socket/emitter');
 const logger = require('../utils/logger');
 const { ROLE_HIERARCHY } = require('../middleware/rbac');
 
@@ -87,6 +89,21 @@ class SecurityEventService {
         });
 
         logger.info(`[Security Event Engine] Created new SecurityEvent ${resultingEvent.eventId} for device ${devId} [Rule: ${anomalyRecord.ruleId}, Severity: ${resultingEvent.severity}]`);
+
+        // Real-time integration (Phase 11): Emit event and dispatch notifications for critical/high
+        if (['high', 'critical'].includes(resultingEvent.severity)) {
+          emitter.emitSecurityEventNew(orgId.toString(), {
+            eventId: resultingEvent.eventId,
+            severity: resultingEvent.severity,
+            category: resultingEvent.category,
+            deviceId: devId,
+            explanation: resultingEvent.explanation
+          });
+
+          notificationService.notifySecurityEvent(orgId.toString(), resultingEvent).catch((err) => {
+            logger.error(`[Notification Service] Async security event notification failed: ${err.message}`);
+          });
+        }
       } else {
         logger.debug(`[Security Event Engine] Aggregated anomaly into active SecurityEvent ${resultingEvent.eventId} (count: ${resultingEvent.occurrenceCount})`);
       }

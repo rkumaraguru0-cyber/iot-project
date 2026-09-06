@@ -1,9 +1,11 @@
+const http = require('http');
 const app = require('./app');
 const config = require('./config');
 const logger = require('./utils/logger');
 const { connectDatabase, disconnectDatabase } = require('./config/database');
 const { startMqttBroker } = require('./mqtt/aedesBroker');
 const anomalyService = require('./services/anomaly.service');
+const { initSocketServer, closeSocketServer } = require('./socket');
 
 const startServer = async () => {
   try {
@@ -17,8 +19,12 @@ const startServer = async () => {
       }
     }
 
+    // Create HTTP Server & Attach Socket.IO
+    const httpServer = http.createServer(app);
+    const io = initSocketServer(httpServer);
+
     // Start Express HTTP Server
-    const server = app.listen(config.port, config.host, () => {
+    const server = httpServer.listen(config.port, config.host, () => {
       logger.info(`SecureWatch IoT Server running in ${config.env} mode on http://${config.host}:${config.port}`);
       logger.info(`Health check available at http://${config.host}:${config.port}/api/v1/health`);
     });
@@ -46,7 +52,14 @@ const startServer = async () => {
         }
       }
 
-      // 2. Close HTTP Server
+      // 2. Close Socket.IO server
+      try {
+        await closeSocketServer();
+      } catch (sErr) {
+        logger.error('Error closing Socket.IO server: %s', sErr.message);
+      }
+
+      // 3. Close HTTP Server
       server.close(async () => {
         logger.info('HTTP server closed.');
 

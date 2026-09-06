@@ -4,6 +4,9 @@ const { Device } = require('../models');
 const { hashToken } = require('../utils/token');
 const { logAuditEvent } = require('./audit.service');
 const { ROLE_HIERARCHY } = require('../middleware/rbac');
+const emitter = require('../socket/emitter');
+const notificationService = require('./notification.service');
+const logger = require('../utils/logger');
 
 const TYPE_PREFIXES = {
   temperature_sensor: 'TS',
@@ -361,6 +364,22 @@ class DeviceService {
           to: newStatus
         }
       });
+
+      // Real-time integration (Phase 11): Emit device status change for quarantined, offline, decommissioned
+      if (['quarantined', 'offline', 'decommissioned'].includes(newStatus)) {
+        emitter.emitDeviceStatusChanged(organizationId.toString(), {
+          deviceId: device.deviceId,
+          status: newStatus,
+          previousStatus: currentStatus
+        });
+      }
+
+      // Trigger notification if newly quarantined
+      if (newStatus === 'quarantined') {
+        notificationService.notifyDeviceQuarantined(organizationId.toString(), device).catch((err) => {
+          logger.error(`[Notification Service] Async device quarantined notification failed: ${err.message}`);
+        });
+      }
     }
 
     // Apply metadata updates

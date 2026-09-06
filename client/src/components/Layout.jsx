@@ -1,13 +1,14 @@
 import React from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { NotificationBell } from './notifications/NotificationBell';
 import {
   Shield,
+  LayoutDashboard,
   Cpu,
   Users,
   Settings,
   LogOut,
-  Bell,
   Activity,
   AlertOctagon,
   FileCode,
@@ -31,17 +32,17 @@ export const Layout = () => {
   };
 
   const navItems = [
+    { to: '/dashboard', label: 'Security Dashboard', icon: LayoutDashboard, active: true },
     { to: '/devices', label: 'Device Inventory', icon: Cpu, active: true },
     { to: '/security-events', label: 'Security Events', icon: Activity, active: true },
     { to: '/incidents', label: 'Incidents & SLA', icon: AlertOctagon, active: true },
     { to: '/firmware', label: 'Firmware & OTA', icon: HardDrive, active: true },
     { to: '/rules', label: 'Detection Rules', icon: FileCode, active: true },
+    ...(hasRole('security_analyst')
+      ? [{ to: '/audit-logs', label: 'Forensic Audit Log', icon: FileText, active: true }]
+      : []),
     { to: '/users', label: 'Team & Access', icon: Users, active: true },
     { to: '/settings', label: 'Org Settings & Profile', icon: Settings, active: true }
-  ];
-
-  const queuedNavItems = [
-    { label: 'Forensic Audit Log', icon: FileText, phase: 'Ph 11' }
   ];
 
   return (
@@ -94,28 +95,6 @@ export const Layout = () => {
               </NavLink>
             );
           })}
-
-          <div className="pt-6 px-3 pb-2 text-[10px] font-bold uppercase tracking-wider text-slate-600">
-            SOC Intelligence Pipeline
-          </div>
-          {queuedNavItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <div
-                key={item.label}
-                className="flex items-center justify-between px-3.5 py-2 rounded-xl text-xs text-slate-500/70 cursor-not-allowed select-none"
-                title={`Available in ${item.phase}`}
-              >
-                <div className="flex items-center gap-3">
-                  <Icon className="w-4 h-4 opacity-50" />
-                  <span>{item.label}</span>
-                </div>
-                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-500">
-                  {item.phase}
-                </span>
-              </div>
-            );
-          })}
         </nav>
 
         {/* User Footer Profile & Logout */}
@@ -154,6 +133,8 @@ export const Layout = () => {
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
               Deterministic Engine Active
             </div>
+            {/* Real-time Notification Bell */}
+            <NotificationBell />
           </div>
         </header>
 

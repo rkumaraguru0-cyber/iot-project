@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 const { Device, SecurityEvent } = require('../models');
+const emitter = require('../socket/emitter');
+const notificationService = require('./notification.service');
 const logger = require('../utils/logger');
 
 const SEVERITY_BASE_POINTS = {
@@ -168,6 +170,7 @@ class RiskService {
 
       const calculated = this.calculateRiskForDevice(device, activeEvents);
       const calculatedAt = new Date();
+      const previousSeverity = device.riskSeverity || 'low';
 
       // Update Device document atomically
       await Device.updateOne(
@@ -181,6 +184,28 @@ class RiskService {
           }
         }
       );
+
+      // Real-time integration (Phase 11): Emit device:risk-escalated & trigger notification ONLY when risk severity ENTERS critical or severe
+      const SEVERITY_RANK = { low: 0, medium: 1, high: 2, critical: 3, severe: 4 };
+      const isEscalation = ['critical', 'severe'].includes(calculated.riskSeverity) &&
+        (SEVERITY_RANK[calculated.riskSeverity] || 0) > (SEVERITY_RANK[previousSeverity] || 0);
+
+      if (isEscalation) {
+        emitter.emitDeviceRiskEscalated(device.organizationId.toString(), {
+          deviceId: device.deviceId,
+          riskScore: calculated.riskScore,
+          riskSeverity: calculated.riskSeverity
+        });
+
+        notificationService.notifyRiskEscalated(
+          device.organizationId.toString(),
+          device,
+          calculated.riskScore,
+          calculated.riskSeverity
+        ).catch((err) => {
+          logger.error(`[Notification Service] Async risk escalation notification failed: ${err.message}`);
+        });
+      }
 
       return {
         deviceId: device.deviceId,
